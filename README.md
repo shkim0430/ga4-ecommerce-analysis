@@ -1,5 +1,10 @@
 # GA4 이커머스 분석 포트폴리오
 
+🔗 **라이브 대시보드**: TBD (배포 후 업데이트 예정)
+📁 **저장소**: [github.com/shkim0430/ga4-ecommerce-analysis](https://github.com/shkim0430/ga4-ecommerce-analysis)
+
+---
+
 ## 프로젝트 소개
 
 GA4 + BigQuery 공개 데이터셋으로 Google Merchandise Store의 이커머스 데이터를 분석한 포트폴리오
