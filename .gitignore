@@ -5,8 +5,8 @@ __pycache__/
 .ipynb_checkpoints/
 
 # 데이터 CSV는 재생성 가능하므로 제외, 시각화 PNG는 README에서 참조하므로 포함
-outputs/*.csv
-outputs/*.parquet
+# outputs/*.csv
+# outputs/*.parquet
 !outputs/figures/
 
 # 인증 정보 (혹시 나중에 생겨도 절대 커밋 금지)
