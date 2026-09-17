@@ -1,6 +1,6 @@
 # GA4 이커머스 분석 포트폴리오
 
-🔗 **라이브 대시보드**: TBD (배포 후 업데이트 예정)
+🔗 **라이브 대시보드**: [https://ga4-ecommerce-shkim0430.streamlit.app/](https://ga4-ecommerce-shkim0430.streamlit.app/)
 📁 **저장소**: [github.com/shkim0430/ga4-ecommerce-analysis](https://github.com/shkim0430/ga4-ecommerce-analysis)
 
 ---
@@ -110,4 +110,4 @@ BigQuery / Python 3.14 / pandas / google-cloud-bigquery / matplotlib / seaborn
 
 - 데이터가 3개월치라 코호트 분석의 관측 기간이 제한적입니다.
 - 난독화된 샘플이므로 절대값은 참고용으로만 활용해야 합니다.
-- 향후 계획: Streamlit 대시보드, 주간 KPI 자동 리포트, LLM 기반 Text-to-SQL 기능
+- 향후 계획: 주간 KPI 자동 리포트, LLM 기반 Text-to-SQL 기능
