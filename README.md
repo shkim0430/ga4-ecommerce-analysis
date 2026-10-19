@@ -19,7 +19,8 @@ GA4 + BigQuery 공개 데이터셋으로 Google Merchandise Store의 이커머�
 
 - 소스: `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
 - 기간: 2020-11-01 ~ 2021-01-31 (약 3개월)
-- 규모: 총 방문자 270,154명 / 구매 유저 4,419명 / 이벤트 17종
+- 규모: 총 방문자 270,154명 / 구매 이벤트 발생 유저 4,419명 (view→cart→checkout 전 단계 경험
+  유저 기준으로는 2,915명) / 이벤트 17종
 - 이 데이터셋은 난독화(obfuscated)된 샘플이므로 절대값(매출, 유저 수 등)은 실제 Google
   Merchandise Store 데이터와 다를 수 있습니다. 추세와 상대 비교 중심으로 해석해 주세요.
 

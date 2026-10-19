@@ -58,7 +58,7 @@ def render_executive_summary() -> None:
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("총 방문자", "270,154")
-    col2.metric("구매 유저", "4,419")
+    col2.metric("구매 유저", "2,915 (전 단계 경험 기준)")
     col3.metric("전체 구매 전환율", "1.08%")
     col4.metric("매출 상위 20% 유저의 매출 비중", "56.7%")
 
