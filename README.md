@@ -32,6 +32,7 @@ GA4 + BigQuery 공개 데이터셋으로 Google Merchandise Store의 이커머�
 4. 매출 집중도 (Pareto 분석)
 5. 구매 빈도 × 금액대 세그먼트 매트릭스
 6. 상품 단위 전환과 매출 기여
+7. 주간 KPI 리포트
 
 ## 핵심 인사이트
 
@@ -81,7 +82,17 @@ python src/fetch_data.py
 
 # 4. 시각화 생성
 python src/visualize.py
+
+# 5. 대시보드 (로컬 확인용, outputs/*.csv만 읽으므로 BigQuery 인증 불필요)
+streamlit run src/dashboard.py
+
+# 6. 주간 리포트 (BigQuery 인증 필요)
+python src/weekly_report.py --week 2020-12-07   # 한 주
+python src/weekly_report.py --all               # 13주 일괄
 ```
+
+- 대시보드는 로컬 확인용이며, 배포본은 상단의 라이브 링크를 참고하세요.
+- 주간 리포트는 과거 데이터(2020-11~2021-01)를 대상으로 하며, 결과는 `outputs/reports/weekly_YYYY-MM-DD.xlsx`에 저장됩니다.
 
 ## 폴더 구조
 
@@ -100,15 +111,19 @@ ga4-ecommerce/
 │   ├── 06b_join_gap_check.sql    # 구매 0건 상품의 item_name 조인 누락 점검
 │   ├── 06c_unmatched_names.sql   # 한쪽 이벤트에만 있는 item_name 목록
 │   ├── 06d_mapping_verify.sql    # 매핑 후보의 item_id 공유 여부 검증
-│   └── 07_item_revenue_pareto.sql # 상품별 매출·수량 순위, 매출 Pareto
+│   ├── 07_item_revenue_pareto.sql # 상품별 매출·수량 순위, 매출 Pareto
+│   ├── 08_weekly_kpi.sql         # 완전한 13주의 주차별 KPI와 주별 상품 매출 상위 5
+│   └── 08b_anomaly_check.sql     # 이상 구간 점검 (누락 기간 제외 퍼널, NULL 매출, transaction_id 누락)
 ├── src/                          # 데이터 추출, 시각화, 대시보드 코드
 │   ├── bq_client.py              # BigQuery 클라이언트 래퍼 (ADC 인증)
 │   ├── fetch_data.py             # sql/ 실행 → outputs/*.csv 저장
 │   ├── visualize.py              # outputs/*.csv → outputs/figures/*.png
-│   └── dashboard.py              # outputs/*.csv 기반 Streamlit 대시보드
+│   ├── dashboard.py              # outputs/*.csv 기반 Streamlit 대시보드
+│   └── weekly_report.py          # 08_weekly_kpi.sql 결과로 주차별 엑셀 리포트 생성
 ├── notebooks/                    # 탐색적 분석용 노트북
-├── outputs/                      # 쿼리 결과 CSV, 시각화 PNG
-│   └── figures/
+├── outputs/                      # 쿼리 결과 CSV, 시각화 PNG, 주간 리포트
+│   ├── figures/
+│   └── reports/                  # weekly_YYYY-MM-DD.xlsx (13주)
 ├── docs/                         # 문서
 │   ├── metric_definitions.md     # 지표 정의, 집계 규칙, 데이터 한계
 │   └── item_name_mapping.md      # item_name 수동 매핑 기록
@@ -125,7 +140,9 @@ BigQuery / Python 3.14 / pandas / google-cloud-bigquery / matplotlib / seaborn
 
 - 데이터가 3개월치라 코호트 분석의 관측 기간이 제한적입니다.
 - 난독화된 샘플이므로 절대값은 참고용으로만 활용해야 합니다.
-- 향후 계획: 주간 KPI 자동 리포트, LLM 기반 Text-to-SQL 기능
+- 향후 계획: 주간 리포트의 스케줄 실행, LLM 기반 Text-to-SQL 기능
+- 주간 리포트는 과거 데이터(2020-11~2021-01) 대상 반복 생성이며 실시간 모니터링이 아닙니다.
+  스케줄 실행이나 알림은 없고 `--week`/`--all`로 수동 실행합니다.
 - 퍼널 분석은 이벤트 경험의 교집합을 기준으로 계산하며, 이벤트 발생의 시간 순서는 반영하지
   않습니다. 구매 이벤트가 있는 유저는 4,419명이지만 조회·장바구니·체크아웃을 모두 거친 교집합은
   2,915명이며, 이 차이 1,504명 중 add_to_cart 추적 누락 기간(2020-11-02~11-15)으로 설명되는 것은
