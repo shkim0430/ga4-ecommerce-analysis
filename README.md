@@ -31,6 +31,7 @@ GA4 + BigQuery 공개 데이터셋으로 Google Merchandise Store의 이커머�
 3. 월간/주간 코호트 재구매율
 4. 매출 집중도 (Pareto 분석)
 5. 구매 빈도 × 금액대 세그먼트 매트릭스
+6. 상품 단위 전환과 매출 기여
 
 ## 핵심 인사이트
 
@@ -86,19 +87,30 @@ python src/visualize.py
 ```
 ga4-ecommerce/
 ├── sql/                          # BigQuery SQL 분석 스크립트
-│   ├── 00_explore.sql
-│   ├── 01_cohort_repurchase.sql
-│   ├── 02_channel_performance.sql
-│   ├── 03_conversion_funnel.sql
-│   └── 04_customer_segments.sql
-├── src/                          # 데이터 추출 및 시각화 코드
+│   ├── 00_explore.sql            # 테이블 구조 탐색 (날짜 범위, 이벤트 종류, 방문자, 구매 매출)
+│   ├── 01_cohort_repurchase.sql  # 월간/주간 코호트 재구매율
+│   ├── 02_channel_performance.sql # 채널(source/medium)별 유입과 구매 성과
+│   ├── 03_conversion_funnel.sql  # 조회 → 장바구니 → 체크아웃 → 구매 퍼널 (교집합 기준)
+│   ├── 04_customer_segments.sql  # 매출 집중도(Pareto)와 빈도×금액 세그먼트
+│   ├── 05_item_explore.sql       # items 배열 탐색 (빈 배열 비율, distinct item_id, 카테고리)
+│   ├── 05b_item_id_check.sql     # 이벤트별 item_id 형식 분포와 ID 교집합
+│   ├── 05c_item_name_check.sql   # item_name 커버리지, item_id 키 충돌, 매출 정합성
+│   ├── 06_item_funnel.sql        # 상품·카테고리 단위 조회 → 장바구니 → 구매 퍼널
+│   ├── 06b_join_gap_check.sql    # 구매 0건 상품의 item_name 조인 누락 점검
+│   ├── 06c_unmatched_names.sql   # 한쪽 이벤트에만 있는 item_name 목록
+│   ├── 06d_mapping_verify.sql    # 매핑 후보의 item_id 공유 여부 검증
+│   └── 07_item_revenue_pareto.sql # 상품별 매출·수량 순위, 매출 Pareto
+├── src/                          # 데이터 추출, 시각화, 대시보드 코드
 │   ├── bq_client.py              # BigQuery 클라이언트 래퍼 (ADC 인증)
 │   ├── fetch_data.py             # sql/ 실행 → outputs/*.csv 저장
-│   └── visualize.py              # outputs/*.csv → outputs/figures/*.png
+│   ├── visualize.py              # outputs/*.csv → outputs/figures/*.png
+│   └── dashboard.py              # outputs/*.csv 기반 Streamlit 대시보드
 ├── notebooks/                    # 탐색적 분석용 노트북
 ├── outputs/                      # 쿼리 결과 CSV, 시각화 PNG
 │   └── figures/
 ├── docs/                         # 문서
+│   ├── metric_definitions.md     # 지표 정의, 집계 규칙, 데이터 한계
+│   └── item_name_mapping.md      # item_name 수동 매핑 기록
 ├── requirements.txt
 ├── CLAUDE.md
 └── README.md
@@ -116,3 +128,15 @@ BigQuery / Python 3.14 / pandas / google-cloud-bigquery / matplotlib / seaborn
 - 퍼널 분석은 이벤트 경험의 교집합을 기준으로 계산하며, 이벤트 발생의 시간 순서는 반영하지
   않습니다. GA4의 세션 끊김·기기 교체 등으로 일부 단계 이벤트가 누락될 수 있어, 실제 전환율은
   본 분석보다 다소 높을 수 있습니다.
+- 상품 퍼널은 같은 `item_name`을 조회·장바구니·구매까지 모두 경험한 유저(유저×상품), 카테고리
+  퍼널은 "카테고리 안의 어떤 상품이든" 경험한 유저(유저×카테고리) 기준입니다. 두 전환율은
+  직접 비교할 수 없고, 상품·카테고리 분석은 상대 비교 용도로만 활용해야 합니다.
+- `view_item` 이벤트의 37.3%는 items 배열이 비어 있어 상품별 조회 유저가 과소 집계되고, 조회
+  기준 전환율은 실제보다 높게 나올 수 있습니다.
+- `item_category` 형식이 이벤트마다 다릅니다 (purchase는 `Apparel`처럼 평평한 분류, 조회/장바구니는
+  `Home/Apparel/` 같은 경로형). 카테고리 분석은 `item_name`을 통해 조회/장바구니 쪽 경로형 분류에
+  연결했고, 한 상품이 여러 카테고리에 속하면 각각에 집계합니다.
+- `item_name` 표기도 일부 불일치합니다 (예: `Longsleeve` ↔ `Long Sleeve Tee`). purchase 매출 중
+  이름으로 연결되지 않던 비중은 최대 4.17%였고, 수동 매핑 3건(매출의 2.7%)으로 보정했습니다. 보정 후에도
+  약 1.5%가 연결되지 않으며, 매핑하지 않은 상품은 구매가 과소 집계될 수 있습니다
+  (`docs/item_name_mapping.md`, `docs/metric_definitions.md`).

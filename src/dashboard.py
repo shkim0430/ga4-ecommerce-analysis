@@ -17,6 +17,7 @@ PAGES = [
     "📅 코호트 재구매율",
     "🚪 채널 성과",
     "👥 고객 세그먼트",
+    "🛍️ 상품 분석",
 ]
 
 FREQUENCY_ORDER = ["1회", "2회", "3회+"]
@@ -291,6 +292,214 @@ def render_segments() -> None:
         st.plotly_chart(fig_revenue, use_container_width=True)
 
 
+def render_item_analysis() -> None:
+    st.title("상품 분석")
+    st.warning(
+        "상품·카테고리 분석은 **상대 비교 전용**입니다. 조회 이벤트의 items 누락, item_name 표기 "
+        "불일치, item_category 형식 불일치로 절대 전환율은 실제와 다를 수 있습니다. "
+        "정의와 한계는 docs/metric_definitions.md를 참고하세요."
+    )
+
+    # (a) 상품 전환 비교
+    st.header("상품 전환 비교")
+    item_df = load_csv("item_funnel.csv")
+    item_df["표본"] = item_df["low_sample"].map({True: "low_sample (구매 유저 30명 미만)", False: "표본 충분"})
+
+    fig_item = px.scatter(
+        item_df,
+        x="view_to_cart_pct",
+        y="cart_to_purchase_pct",
+        size="cart_users",
+        color="표본",
+        hover_name="item_name",
+        hover_data={"view_users": True, "cart_users": True, "purchase_users": True, "표본": False},
+        color_discrete_map={
+            "low_sample (구매 유저 30명 미만)": "#BBBBBB",
+            "표본 충분": "#4C72B0",
+        },
+        labels={
+            "view_to_cart_pct": "조회 → 장바구니 (%)",
+            "cart_to_purchase_pct": "장바구니 → 구매 (%)",
+        },
+    )
+    fig_item.update_layout(title="상품별 단계 전환율 (버블 크기 = 장바구니 유저 수)")
+    st.plotly_chart(fig_item, use_container_width=True)
+
+    low_count = int(item_df["low_sample"].sum())
+    st.caption(
+        f"조회 100명 이상 + 장바구니 500명 이상 상품 {len(item_df)}개 중 "
+        f"low_sample(구매 유저 30명 미만) {low_count}개는 회색으로 표시했습니다. "
+        "각 단계는 같은 상품을 조회 → 장바구니 → 구매까지 모두 경험한 유저(유저×상품 교집합) 기준입니다."
+    )
+    st.caption(
+        "⚠️ view_item 이벤트의 37.3%(144,192 / 386,068)는 items 배열이 비어 있어 상품별 조회 유저가 "
+        "과소 집계됩니다. 조회 기준 전환율은 실제보다 높게 나올 수 있습니다."
+    )
+    st.caption(
+        "purchase의 표기가 달라 연결이 끊긴 3개 상품은 수동 매핑으로 보정했습니다 "
+        "(docs/item_name_mapping.md). 매핑하지 않은 상품은 구매가 0이거나 과소 집계될 수 있습니다."
+    )
+    st.dataframe(
+        item_df[
+            [
+                "item_name",
+                "view_users",
+                "cart_users",
+                "purchase_users",
+                "view_to_cart_pct",
+                "cart_to_purchase_pct",
+                "overall_conversion_pct",
+                "low_sample",
+            ]
+        ].sort_values("view_users", ascending=False),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.divider()
+
+    # (b) 카테고리 퍼널
+    st.header("카테고리 퍼널")
+    category_df = load_csv("category_funnel.csv").sort_values("view_users", ascending=False)
+    category_df["비고"] = category_df["item_category"].map(
+        lambda c: "과소 집계 가능" if c == "Home/Eco-Friendly/" else ""
+    )
+
+    top_categories = category_df.head(15).melt(
+        id_vars="item_category",
+        value_vars=["view_to_cart_pct", "cart_to_purchase_pct"],
+        var_name="단계",
+        value_name="전환율 (%)",
+    )
+    top_categories["단계"] = top_categories["단계"].map(
+        {"view_to_cart_pct": "조회 → 장바구니", "cart_to_purchase_pct": "장바구니 → 구매"}
+    )
+    fig_category = px.bar(
+        top_categories,
+        x="전환율 (%)",
+        y="item_category",
+        color="단계",
+        barmode="group",
+        orientation="h",
+        labels={"item_category": "카테고리"},
+    )
+    fig_category.update_layout(
+        title="조회 유저 상위 15개 리프 카테고리의 단계 전환율",
+        yaxis=dict(autorange="reversed"),
+        height=650,
+    )
+    st.plotly_chart(fig_category, use_container_width=True)
+
+    st.caption(
+        "카테고리 퍼널은 **카테고리 안의 어떤 상품이든** 조회 → 장바구니 → 구매한 유저(유저×카테고리 교집합) "
+        "기준이라 상품 퍼널보다 전환율이 높게 나옵니다. 두 퍼널의 전환율을 직접 비교하지 마세요. "
+        "한 상품이 여러 카테고리에 속하면 각각에 집계되므로 카테고리 간 합계는 의미가 없습니다."
+    )
+    st.info(
+        "Home/Eco-Friendly/에는 Eco Tee 계열(Google Eco Tee Black, Google Unisex Pride Eco-Tee Black, "
+        "Google Women's Eco Tee Black)이 포함되어 있습니다. 이 상품들은 구매 이벤트의 이름 표기가 "
+        "달라 연결되지 않았을 가능성이 있어, 이 카테고리의 구매 유저는 과소 집계되었을 수 있습니다."
+    )
+    st.dataframe(
+        category_df[
+            [
+                "item_category",
+                "view_users",
+                "cart_users",
+                "purchase_users",
+                "view_to_cart_pct",
+                "cart_to_purchase_pct",
+                "overall_conversion_pct",
+                "비고",
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.divider()
+
+    # (c) 상품 매출 Pareto와 매출 vs 수량 순위
+    st.header("상품 매출 Pareto와 매출 vs 수량 순위")
+    pareto_df = load_csv("item_pareto.csv")
+    groups_df = load_csv("item_pareto_groups.csv").set_index("product_group")
+
+    col1, col2, col3 = st.columns(3)
+    top10 = groups_df.loc["top_10pct"]
+    top20 = groups_df.loc["top_20pct"]
+    col1.metric(
+        f"상위 10% 상품 ({int(top10['products_in_group'])}개) 매출 비중",
+        f"{top10['revenue_share_pct']:.1f}%",
+    )
+    col2.metric(
+        f"상위 20% 상품 ({int(top20['products_in_group'])}개) 매출 비중",
+        f"{top20['revenue_share_pct']:.1f}%",
+    )
+    col3.metric("전체 상품 수", f"{int(top10['total_products'])}개")
+
+    fig_pareto = go.Figure()
+    fig_pareto.add_bar(
+        x=pareto_df["item_name"],
+        y=pareto_df["item_revenue"],
+        name="매출",
+        marker_color="#4C72B0",
+    )
+    fig_pareto.add_trace(
+        go.Scatter(
+            x=pareto_df["item_name"],
+            y=pareto_df["cumulative_share_pct"],
+            name="누적 매출 비중 (%)",
+            mode="lines+markers",
+            marker_color="#DD8452",
+            yaxis="y2",
+        )
+    )
+    fig_pareto.update_layout(
+        title="매출 상위 10개 상품과 누적 매출 비중",
+        yaxis=dict(title="item_revenue"),
+        yaxis2=dict(title="누적 매출 비중 (%)", overlaying="y", side="right"),
+        xaxis=dict(tickangle=-35),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.6, xanchor="center", x=0.5),
+        height=600,
+    )
+    st.plotly_chart(fig_pareto, use_container_width=True)
+
+    st.dataframe(
+        pareto_df[["revenue_rank", "item_name", "item_revenue", "quantity", "quantity_rank"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    rank_gap_df = load_csv("item_rank_gap.csv")
+    rank_gap_df["방향"] = rank_gap_df["rank_gap"].map(
+        lambda g: "수량 순위가 매출 순위보다 높음" if g < 0 else "매출 순위가 수량 순위보다 높음"
+    )
+    fig_gap = px.bar(
+        rank_gap_df,
+        x="rank_gap",
+        y="item_name",
+        color="방향",
+        orientation="h",
+        labels={"rank_gap": "수량 순위 − 매출 순위", "item_name": "상품"},
+    )
+    fig_gap.update_layout(title="매출 순위와 수량 순위 차이가 큰 상품 5개", yaxis=dict(autorange="reversed"))
+    st.plotly_chart(fig_gap, use_container_width=True)
+
+    st.dataframe(
+        rank_gap_df[
+            ["item_name", "item_revenue", "quantity", "revenue_rank", "quantity_rank", "rank_gap", "revenue_per_unit"]
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    all_checks_ok = bool(pareto_df["total_check_ok"].all() and rank_gap_df["total_check_ok"].all())
+    st.caption(
+        "순위는 매출·수량 모두 동률 공동 순위(RANK)이며, 순위 차이는 매출 또는 수량 상위 50위 안의 상품만 "
+        "대상으로 했습니다. 매핑 3건은 합산했고, item_revenue 총합 362,110 검증: "
+        + ("통과" if all_checks_ok else "불일치")
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="GA4 이커머스 분석",
@@ -310,6 +519,8 @@ def main() -> None:
         render_channel_performance()
     elif page == "👥 고객 세그먼트":
         render_segments()
+    elif page == "🛍️ 상품 분석":
+        render_item_analysis()
 
 
 if __name__ == "__main__":
