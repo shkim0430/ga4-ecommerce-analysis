@@ -1,0 +1,3 @@
+﻿product_group,total_products,products_in_group,group_revenue,revenue_share_pct,named_total_revenue,all_rows_revenue,total_check_ok
+top_10pct,396,40,192185.0,53.07365165281268,362110.0,362110.0,True
+top_20pct,396,80,251586.0,69.4777829941178,362110.0,362110.0,True

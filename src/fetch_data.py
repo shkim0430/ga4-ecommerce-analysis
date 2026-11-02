@@ -19,6 +19,12 @@ COHORT_SEPARATOR = "-- ========="
 SEGMENT_SQL_PATH = Path("sql/04_customer_segments.sql")
 SEGMENT_SEPARATOR = "-- ========="
 
+ITEM_FUNNEL_SQL_PATH = Path("sql/06_item_funnel.sql")
+ITEM_FUNNEL_SEPARATOR = "-- ========="
+
+ITEM_PARETO_SQL_PATH = Path("sql/07_item_revenue_pareto.sql")
+ITEM_PARETO_SEPARATOR = "-- ========="
+
 
 def _save_csv(df: pd.DataFrame, output_path: str) -> None:
     path = Path(output_path)
@@ -59,8 +65,37 @@ def fetch_segment_queries() -> None:
     _save_csv(segment_matrix_df, "outputs/segment_matrix.csv")
 
 
+def fetch_item_funnel() -> None:
+    sql_text = ITEM_FUNNEL_SQL_PATH.read_text(encoding="utf-8")
+    item_sql, category_sql = sql_text.split(ITEM_FUNNEL_SEPARATOR, 1)
+
+    print(f"▶ 실행 중: {ITEM_FUNNEL_SQL_PATH} (item)")
+    item_df = run_query_string(item_sql)
+    _save_csv(item_df, "outputs/item_funnel.csv")
+
+    print(f"▶ 실행 중: {ITEM_FUNNEL_SQL_PATH} (category)")
+    category_df = run_query_string(category_sql)
+    _save_csv(category_df, "outputs/category_funnel.csv")
+
+
+def fetch_item_pareto() -> None:
+    sql_text = ITEM_PARETO_SQL_PATH.read_text(encoding="utf-8")
+    pareto_sql, groups_sql, rank_gap_sql = sql_text.split(ITEM_PARETO_SEPARATOR)
+
+    print(f"▶ 실행 중: {ITEM_PARETO_SQL_PATH} (pareto)")
+    _save_csv(run_query_string(pareto_sql), "outputs/item_pareto.csv")
+
+    print(f"▶ 실행 중: {ITEM_PARETO_SQL_PATH} (groups)")
+    _save_csv(run_query_string(groups_sql), "outputs/item_pareto_groups.csv")
+
+    print(f"▶ 실행 중: {ITEM_PARETO_SQL_PATH} (rank_gap)")
+    _save_csv(run_query_string(rank_gap_sql), "outputs/item_rank_gap.csv")
+
+
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     fetch_simple_queries()
     fetch_cohort_queries()
     fetch_segment_queries()
+    fetch_item_funnel()
+    fetch_item_pareto()
