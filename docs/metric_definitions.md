@@ -41,7 +41,7 @@
 - 정합성: `SUM(item_revenue)` 362,110 vs `SUM(ecommerce.purchase_revenue)` 362,165 (비율 0.9998, 차이 55). 차이의 원인은 확인하지 않았습니다.
 - 이벤트 단위 매출(유저별 총매출 등)은 `ecommerce.purchase_revenue`를 UNNEST 없이 집계한다.
 - 일부 유저는 `purchase_revenue`가 NULL이라 합계가 NULL이 된다 (4,400명 중 353명, NULL 구매 이벤트 400건). NULL 구매 이벤트의 **52.3%(209건)는 2021-01-26 이후 엿새에 몰려 있고**, 나머지 약 48%는 그 이전에 발생했으며 원인을 확인하지 못했다. 따라서 NULL을 "매출 0원 주문"으로 단정하지 않는다 (`sql/08b_anomaly_check.sql`).
-- 금액대 세그먼트에서는 `COALESCE(revenue, 0)`으로 처리해 Low로 분류한다 (NULL이 `ELSE 'VIP'`로 빠지는 것을 방지). 그 결과 Low 세그먼트에는 매출을 알 수 없는 유저가 섞여 있다.
+- 금액대 세그먼트에서는 `COALESCE(revenue, 0)`으로 처리해 Low로 분류한다. 그 결과 Low 세그먼트에는 매출을 알 수 없는 유저가 섞여 있다.
 
 ## 3-1. 카테고리(item_category) 집계 규칙
 
