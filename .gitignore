@@ -24,3 +24,5 @@ Thumbs.db
 outputs/reports/*.xlsx
 
 outputs/reports/*.xlsx
+
+tableau/
