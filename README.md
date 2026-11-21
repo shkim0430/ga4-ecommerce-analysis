@@ -1,9 +1,9 @@
 # GA4 이커머스 분석 포트폴리오
 
-🔗 **라이브 대시보드**: [https://ga4-ecommerce-shkim0430.streamlit.app/](https://ga4-ecommerce-shkim0430.streamlit.app/)
-📁 **저장소**: [github.com/shkim0430/ga4-ecommerce-analysis](https://github.com/shkim0430/ga4-ecommerce-analysis)
-📊 **Tableau 대시보드**: [링크](https://public.tableau.com/app/profile/.71103031/viz/ga4_ecommerce_dashboard/1)
-같은 분석 결과를 BI 도구(Tableau Public)로 다시 구현한 것이며 새 분석이 아닙니다. 사용 데이터는 `outputs/*.csv`입니다.
+- 🔗 **라이브 대시보드**: [https://ga4-ecommerce-shkim0430.streamlit.app/](https://ga4-ecommerce-shkim0430.streamlit.app/)
+- 📁 **저장소**: [github.com/shkim0430/ga4-ecommerce-analysis](https://github.com/shkim0430/ga4-ecommerce-analysis)
+- 📊 **Tableau 대시보드**: [Tableau Public 대시보드](https://public.tableau.com/app/profile/.71103031/viz/ga4_ecommerce_dashboard/1)
+  - 같은 분석 결과를 BI 도구(Tableau Public)로 다시 구현한 것이며 새 분석이 아닙니다. 사용 데이터는 `outputs/*.csv`입니다.
 
 ---
 
